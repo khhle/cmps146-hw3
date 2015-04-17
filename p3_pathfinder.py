@@ -1,5 +1,6 @@
 
-
+from heapq import heappush, heappop
+from math import sqrt
 #It should define a function called "find_path". This function should take three arguments:
 #source_point: (x,y) pair
 #destination_point: (x,y) pair
@@ -13,27 +14,58 @@
 def find_path(src_point,dst_point,mesh):
     path = []
     visited_nodes = []
-
+    coordinates = []
     box_list = mesh['boxes']
     adj_list = mesh['adj']
+
+    box_list_traverse = []
+    detail_points = {'Box': box_list_traverse, 'xy': coordinates}
+
     #find box contain src
     for box in box_list:
         if(isInsideRect(box,src_point)):
             visited_nodes.append(box)
 
-    #find box contain src
+    #find box contain dst
     for box in box_list:
         if(isInsideRect(box,dst_point)):
             visited_nodes.append(box)
 
 
-    bfs_path = bfs(visited_nodes[0],visited_nodes[1],adj_list)
+    #bfs_path = bfs(visited_nodes[0],visited_nodes[1],adj_list)
+    bfs_path = dijkstras_shortest_path(visited_nodes[0], src_point, visited_nodes[1],adj_list)
     for my_path in bfs_path:
         visited_nodes.append(my_path)
-
+    path = path_search(bfs_path,src_point, dst_point)
+    #path.append((src_point, dst_point))
+    #path = ((100,200),(300,400))
+    #print str(test)
     return path,visited_nodes
 
+def euclidian(src,dst):
+    startx,starty = src
+    dstx, dsty = dst
 
+    return sqrt((startx-dstx)*(startx-dstx) + (starty-dsty)*(starty-dsty))
+
+def find_point(src, box): #finds midpoint in box
+    x1,x2,y1,y2 = box
+    srcx, srcy = src
+    dstx = min(x2-1,max(x1,srcx))
+    dsty = min(y2-1,max(y1,srcy))
+    return dstx, dsty
+
+def path_search(boxes,src, end):
+    path = []
+    for box in boxes:
+        if box == boxes[-1]:
+            coordinate = end
+            path.append((src,coordinate))
+        else:
+            coordinate = find_point(src, box)
+            path.append((src,coordinate))
+            src = coordinate
+    return path
 
 #check if a point is inside a rect
 def isInsideRect(rect,point):
@@ -50,6 +82,58 @@ def isInsideRect(rect,point):
         return False
 
     return True
+
+#finds distances from current box to adj boxes
+def dfind_distance(adj, src_point):
+    valid = []
+    for box in adj:
+        point = find_point(src_point, box)
+        distance = euclidian(src_point, point)
+        valid.append((distance, point))
+    return valid
+
+
+def dijkstras_shortest_path(src_box, src_point, dst, adj):
+    Dist = {}
+    Prev = {}
+    #and another one to check if nodes have been fully processed
+    Processed = {}
+    Dist[src_box] = 0
+    queue = [(0,src_box)]
+    nextCells = [(Dist[src_box], src_point)]
+    found = False
+
+    #while queue is not empty. If it's empty we've searched all valid points
+    while(queue):
+        curr = heappop(queue)
+        Processed[curr[1]] = True
+        #print "Popping %s with Distance" %(curr[1],)
+
+        nextCells = dfind_distance(adj, src_box)
+        print (nextCells[0][1])
+        for i in range(0, len(nextCells)):
+            if not (nextCells[i][1] in Processed):
+                #update the distance in the current tuple
+                nextCells[i] = (euclidian, nextCells[i][1])
+                #check if distance needs updating in the dict
+                if not (nextCells[i][1] in Dist) or (Dist[nextCells[i][1]] > nextCells[i][0]):
+                    Dist[nextCells[i][1]] = nextCells[i][0]
+                    Prev[nextCells[i][1]] = curr[1]
+                    #push onto the queue
+                    heappush(queue, nextCells[i])
+                    if nextCells[i][1] == dst:
+                        found = True
+                        break
+        if found:
+            break
+
+    if found:
+        path = []
+        curr = Prev[dst]
+        while curr != src_box:
+            path.append(curr)
+            curr = Prev[curr]
+        return path
 
 
 #BFS search
@@ -101,3 +185,6 @@ def bfs(source, target, adj, verbose=False):
     path.reverse()
 
     return path
+
+
+
