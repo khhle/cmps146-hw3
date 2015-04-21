@@ -14,7 +14,7 @@ from math import sqrt
 def find_path(src_point,dst_point,mesh):
     path = []
     visited_nodes = []
-
+    flag = False
     box_list = mesh['boxes']
     adj_list = mesh['adj']
 
@@ -25,13 +25,27 @@ def find_path(src_point,dst_point,mesh):
     for box in box_list:
         if(isInsideRect(box,src_point)):
             visited_nodes.append(box)
+            flag = True
+            break
+        else:
+            flag = False
+
+    if flag is False:
+        print("No path found")
+        return [], []
 
     #find box contain dst
     for box in box_list:
         if(isInsideRect(box,dst_point)):
             visited_nodes.append(box)
+            flag = True
+            break
+        else:
+            flag = False
 
-
+    if flag is False:
+        print("No path found")
+        return [], []
     #found_path,detail_points = bfs(visited_nodes[0],visited_nodes[1],adj_list,src_point)
     #found_path,detail_points = dijkstra_search(visited_nodes[0],visited_nodes[1],adj_list,src_point)
     found_path,detail_points = a_star_search(visited_nodes[0],visited_nodes[1],adj_list,src_point,dst_point)
@@ -181,7 +195,6 @@ def dijkstra_search(start, goal,adj,src_point):
                 came_from[next] = current
                 #pstart = pend
                 detail_points[next].append(temp_point)
-
     current = goal
     path = [current]
     while current != start:

@@ -77,11 +77,11 @@ def on_click(event):
     destination_point = event.y*SUBSAMPLE, event.x*SUBSAMPLE
 
     try:
-      path, visited_boxes = p3_pathfinder.find_path(source_point, destination_point, mesh) 
+      path, visited_boxes = p3_pathfinder.find_path(source_point, destination_point, mesh)
+
     except:
       destination_point = None
       traceback.print_exc()
-
 
   redraw()
 
