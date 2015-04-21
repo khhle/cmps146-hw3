@@ -249,7 +249,117 @@ def a_star_search(start, goal,adj,src_point,dst_point):
         path.append(current)
     return path,detail_points
 
+#Bidirec search
+def bidirect_search(start, goal,adj,src_point,dst_point):
+    frontier = PriorityQueue2()
+    frontier.put(start, 0,'dst')
+    frontier.put(goal, 0,'src')
 
+    came_from_forward = {}
+    came_from_backward = {}
+    cost_so_far_forward = {}
+    cost_so_far_backward = {}
+
+    visited_forward = {}
+    visited_backward = {}
+
+    came_from_forward[start] = None
+    cost_so_far_forward[start] = 0
+    came_from_backward[goal] = None
+    cost_so_far_backward[goal] = 0
+
+    detail_points = collections.defaultdict(list)
+
+    detail_points[start].append(src_point)
+    detail_points[goal].append(dst_point)
+
+    visited_forward[start] = True
+    visited_backward[goal] = True
+
+    goal_forward = goal
+    goal_backward = start
+
+    direction = 0
+
+    while not frontier.empty():
+
+        temp = frontier.get()
+        if temp[2] == 'dst':
+            current_forward = temp[1]
+            direction = 1
+
+        elif temp[2] == 'src':
+            current_backward = temp[1]
+            direction = -1
+        #Visited[temp[1]] = True
+
+
+
+        #print Visited[current_forward]
+        #if direction == 1 and current_forward in came_from_backward:
+        #    goal_forward = current_forward
+         #   break
+        #if direction == -1 and current_backward in came_from_forward:
+        #    goal_backward = current_backward
+         #   break
+
+        if current_forward == goal and current_backward == start:
+            break
+
+
+        if direction == 1:
+            nextCells_forward = adj[current_forward] #find all the adj boxes
+        elif direction == -1:
+            nextCells_backward = adj[current_backward] #find all the adj boxes
+
+        if direction == 1:
+            for next in nextCells_forward:
+                cost, temp_point = find_cost(current_forward,next,detail_points[current_forward][0]) #find the cost and point inside
+                new_cost = cost_so_far_forward[current_forward] + cost
+                #new_cost = cost_so_far[current] + graph.cost(current, next)
+                if next not in cost_so_far_forward or new_cost < cost_so_far_forward[next]:
+                    cost_so_far_forward[next] = new_cost
+                    priority = new_cost
+                    frontier.put(next, priority,'dst')
+                    came_from_forward[next] = current_forward
+                    #pstart = pend
+                    detail_points[next].append(temp_point)
+                    visited_forward[next] = True
+
+        if direction == -1:
+            for next in nextCells_backward:
+                cost, temp_point = find_cost(current_backward,next,detail_points[current_backward][0]) #find the cost and point inside
+                new_cost = cost_so_far_backward[current_backward] + cost
+                #new_cost = cost_so_far[current] + graph.cost(current, next)
+                if next not in cost_so_far_backward or new_cost < cost_so_far_backward[next]:
+                    cost_so_far_backward[next] = new_cost
+                    priority = new_cost
+                    frontier.put(next, priority,'src')
+                    came_from_backward[next] = current_backward
+                    #pstart = pend
+                    detail_points[next].append(temp_point)
+                    visited_backward[next] = True
+
+
+    current_forward = goal_forward
+    current_backward = goal_backward
+    path = [current_forward]
+    path.append(current_backward)
+    print "came from front " + str(came_from_forward)
+    print "came from back" + str(came_from_backward)
+
+    while current_forward != current_backward:
+        print "abc" + str(current_forward)
+        current_forward = came_from_forward[current_forward]
+        path.append(current_forward)
+        print "def" + str(current_backward)
+        current_backward = came_from_backward[current_backward]
+        path.append(current_backward)
+
+
+
+
+    return path,detail_points
 
 
 #Helper class for search function
@@ -265,3 +375,18 @@ class PriorityQueue:
 
     def get(self):
         return heapq.heappop(self.elements)[1]
+		
+		
+#Helper class for search function
+class PriorityQueue2:
+    def __init__(self):
+        self.elements = []
+
+    def empty(self):
+        return len(self.elements) == 0
+
+    def put(self, item, priority,goal):
+        heapq.heappush(self.elements, (priority, item,goal))
+
+    def get(self):
+        return heapq.heappop(self.elements)
