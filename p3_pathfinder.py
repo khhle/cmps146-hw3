@@ -46,10 +46,10 @@ def find_path(src_point,dst_point,mesh):
     if flag is False:
         print("No path found")
         return [], []
-    #found_path,detail_points = bfs(visited_nodes[0],visited_nodes[1],adj_list,src_point)
-    #found_path,detail_points = dijkstra_search(visited_nodes[0],visited_nodes[1],adj_list,src_point)
-    #found_path,detail_points = a_star_search(visited_nodes[0],visited_nodes[1],adj_list,src_point,dst_point)
-    found_path,detail_points, direction, mid_point = bidirect_search(visited_nodes[0],visited_nodes[1],adj_list,src_point,dst_point)
+    #found_path,detail_points,visited_nodes = bfs(visited_nodes[0],visited_nodes[1],adj_list,src_point)
+    found_path,detail_points,visited_nodes = dijkstra_search(visited_nodes[0],visited_nodes[1],adj_list,src_point)
+    #found_path,detail_points,visited_nodes = a_star_search(visited_nodes[0],visited_nodes[1],adj_list,src_point,dst_point)
+    #found_path,detail_points, direction, mid_point = bidirect_search(visited_nodes[0],visited_nodes[1],adj_list,src_point,dst_point)
     #Re-construct the path using line segment
     #start at dst_point since found_path in reverse order
 
@@ -72,8 +72,8 @@ def find_path(src_point,dst_point,mesh):
             path.append((pstart,pend))
             pstart = pend
     #Add path to visited_nodes
-    for my_path in found_path:
-        visited_nodes.append(my_path)
+    #for my_path in found_path:
+    #    visited_nodes.append(my_path)
 
 
     return path,visited_nodes
@@ -133,6 +133,7 @@ def bfs(source, target, adj,src_point):
     parent = {}
     discovered = {}
     queue = []
+    visited = []
     detail_points = collections.defaultdict(list)
     # explore starting at the source node
 
@@ -155,6 +156,7 @@ def bfs(source, target, adj,src_point):
 
         for v in adj[u]:
             if v not in discovered:
+                visited.append(v)
                 discovered[v] = True
                 parent[v] = u
                 queue.append(v)
@@ -165,7 +167,9 @@ def bfs(source, target, adj,src_point):
     #    print "terminated after %d iterations" % iterations
 
     # reconstruct the path backwards, starting at the target node
-
+    if u != target:
+        print "no path"
+        return [],([],[]),visited
     path = []
     node = target
     while node in parent:
@@ -174,7 +178,7 @@ def bfs(source, target, adj,src_point):
     path.append(source)
     #path.reverse()
 
-    return path,detail_points
+    return path,detail_points,visited
 
 
 
@@ -210,13 +214,13 @@ def dijkstra_search(start, goal,adj,src_point):
                 detail_points[next].append(temp_point)
     if current != goal:
         print "no path"
-        return [],([],[])
+        return [],([],[]),visited
     current = goal
     path = [current]
     while current != start:
         current = came_from[current]
         path.append(current)
-    return path,detail_points
+    return path,detail_points,visited
 
 
 #Helper function for A*
@@ -239,7 +243,7 @@ def a_star_search(start, goal,adj,src_point,dst_point):
     detail_points = collections.defaultdict(list)
 
     detail_points[start].append(src_point)
-
+    visited = []
     while not frontier.empty():
         current = frontier.get()
 
@@ -251,6 +255,7 @@ def a_star_search(start, goal,adj,src_point,dst_point):
             new_cost = cost_so_far[current] + cost
             #new_cost = cost_so_far[current] + graph.cost(current, next)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
+                visited.append(next)
                 cost_so_far[next] = new_cost
                 priority = new_cost + euclidian(dst_point, temp_point)
                 #priority = new_cost + heuristic(dst_point, temp_point)
@@ -263,7 +268,7 @@ def a_star_search(start, goal,adj,src_point,dst_point):
     while current != start:
         current = came_from[current]
         path.append(current)
-    return path,detail_points
+    return path,detail_points,visited
 
 #Bidirec search
 def bidirect_search(start, goal,adj,src_point,dst_point):
