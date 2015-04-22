@@ -20,16 +20,21 @@ def find_path(src_point,dst_point,mesh):
     direction = 0
     detail_points = {}
 
+    start = []
+    goal = []
+    meet_point = (0,0)
 
     #find box contain src
     for box in box_list:
         if(isInsideRect(box,src_point)):
             visited_nodes.append(box)
+            start = box
             flag = True
             break
         else:
             flag = False
 
+    #Return if no box for src_point
     if flag is False:
         print("No path found")
         return [], []
@@ -38,39 +43,43 @@ def find_path(src_point,dst_point,mesh):
     for box in box_list:
         if(isInsideRect(box,dst_point)):
             visited_nodes.append(box)
+            goal = box
             flag = True
             break
         else:
             flag = False
 
+    #Return if no box for dst_point
     if flag is False:
         print("No path found")
         return [], []
-    #found_path,detail_points,visited_nodes = bfs(visited_nodes[0],visited_nodes[1],adj_list,src_point)
-    found_path,detail_points,visited_nodes = dijkstra_search(visited_nodes[0],visited_nodes[1],adj_list,src_point)
-    #found_path,detail_points,visited_nodes = a_star_search(visited_nodes[0],visited_nodes[1],adj_list,src_point,dst_point)
-    #found_path,detail_points, direction, mid_point = bidirect_search(visited_nodes[0],visited_nodes[1],adj_list,src_point,dst_point)
-    #Re-construct the path using line segment
-    #start at dst_point since found_path in reverse order
 
-    mid_point = (0,0)
+    #found_path,detail_points,visited_nodes = bfs(start,goal,adj_list,src_point)
+    found_path,detail_points,visited_nodes = dijkstra_search(start,goal,adj_list,src_point)
+    #found_path,detail_points,visited_nodes = a_star_search(start,goal,adj_list,src_point,dst_point)
+    #found_path,detail_points, direction, meet_point,visited_nodes = bidirect_search(start,goal,adj_list,src_point,dst_point)
 
+
+
+
+    #special case for bidirectional search
     if direction != 0:
-        pstart = mid_point
+        pstart = meet_point
         for my_path in found_path:
             pend = detail_points[my_path][0]
             path.append((pstart,pend))
             pstart = pend
-            if direction == 1 and my_path == visited_nodes[0]:
-                pstart = mid_point
-            if direction == -1 and my_path == visited_nodes[1]:
-                pstart = mid_point
+            if direction == 1 and my_path == start:
+                pstart = meet_point
+            if direction == -1 and my_path == goal:
+                pstart = meet_point
     else:
         pstart = dst_point
         for my_path in found_path:
             pend = detail_points[my_path][0]
             path.append((pstart,pend))
             pstart = pend
+
     #Add path to visited_nodes
     #for my_path in found_path:
     #    visited_nodes.append(my_path)
@@ -145,11 +154,8 @@ def bfs(source, target, adj,src_point):
     while queue:
 
         iterations += 1
-
         u = queue.pop()
 
-        #if verbose:
-        #    print "processing", u
 
         if u == target: # early termination
             break
@@ -163,13 +169,13 @@ def bfs(source, target, adj,src_point):
                 temp_point = find_point(detail_points[u][0],u)
                 detail_points[v].append(temp_point)
 
-    #if verbose:
-    #    print "terminated after %d iterations" % iterations
+
 
     # reconstruct the path backwards, starting at the target node
     if u != target:
         print "no path"
         return [],([],[]),visited
+
     path = []
     node = target
     while node in parent:
@@ -194,6 +200,7 @@ def dijkstra_search(start, goal,adj,src_point):
 
     detail_points[start].append(src_point)
     visited = []
+
     while not frontier.empty():
         current = frontier.get()
 
@@ -203,17 +210,17 @@ def dijkstra_search(start, goal,adj,src_point):
         for next in nextCells:
             cost, temp_point = find_cost(current,next,detail_points[current][0]) #find the cost and point inside
             new_cost = cost_so_far[current] + cost
-            #new_cost = cost_so_far[current] + graph.cost(current, next)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
                 visited.append(next)
                 cost_so_far[next] = new_cost
                 priority = new_cost
                 frontier.put(next, priority)
                 came_from[next] = current
-                #pstart = pend
+
                 detail_points[next].append(temp_point)
+
     if current != goal:
-        print "no path"
+        print "No Path Found"
         return [],([],[]),visited
     current = goal
     path = [current]
@@ -223,11 +230,6 @@ def dijkstra_search(start, goal,adj,src_point):
     return path,detail_points,visited
 
 
-#Helper function for A*
-def heuristic(a, b):
-    (x1, y1) = a
-    (x2, y2) = b
-    return abs(x1 - x2) + abs(y1 - y2)
 
 
 
@@ -253,16 +255,17 @@ def a_star_search(start, goal,adj,src_point,dst_point):
         for next in nextCells:
             cost, temp_point = find_cost(current,next,detail_points[current][0]) #find the cost and point inside
             new_cost = cost_so_far[current] + cost
-            #new_cost = cost_so_far[current] + graph.cost(current, next)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
                 visited.append(next)
                 cost_so_far[next] = new_cost
                 priority = new_cost + euclidian(dst_point, temp_point)
-                #priority = new_cost + heuristic(dst_point, temp_point)
                 frontier.put(next, priority)
                 came_from[next] = current
                 detail_points[next].append(temp_point)
 
+    if current != goal:
+        print "No Path Found"
+        return [],([],[]),visited
     current = goal
     path = [current]
     while current != start:
@@ -280,9 +283,8 @@ def bidirect_search(start, goal,adj,src_point,dst_point):
     came_from_backward = {}
     cost_so_far_forward = {}
     cost_so_far_backward = {}
+    visited = []
 
-    visited_forward = {}
-    visited_backward = {}
 
     came_from_forward[start] = None
     cost_so_far_forward[start] = 0
@@ -294,138 +296,121 @@ def bidirect_search(start, goal,adj,src_point,dst_point):
     detail_points[start].append(src_point)
     detail_points[goal].append(dst_point)
 
-    visited_forward[start] = True
-    visited_backward[goal] = True
+
     mid_point = (0,0)
-    goal_mid = goal
+    mid_box = goal
     current_forward = start
     current_backward = goal
     direction = 0
     find = False
+
     while not frontier.empty():
+        #stop when both search meet
         if find:
             break
+
         temp = frontier.get()
         if temp[2] == 'dst':
-            #current_prev_forward = current_forward
             current_forward = temp[1]
             direction = 1
 
         elif temp[2] == 'src':
-            #current_prev_backward = current_backward
             current_backward = temp[1]
             direction = -1
-        #Visited[temp[1]] = True
-
-        #if direction == -1 and current_backward == start:
-        #    break
-
-        #print Visited[current_forward]
-        #if direction == 1 and current_forward in came_from_backward:
-        #    foward_last = current_prev_forward
-        #   came_from_forward[current_forward] = foward_last
-        #    goal_mid = current_forward
-        #    flag = True
-        #    break
-        #if direction == -1 and current_backward in came_from_forward:
-        #    backward_last = current_prev_backward
-        #    came_from_backward[current_backward] = backward_last
-        #    goal_mid = current_backward
-        #    flag = True
-        #    break
-
-        #if current_forward == goal and current_backward == start:
-        #    break
 
 
+        #Forward search
         if direction == 1:
             nextCells_forward = adj[current_forward] #find all the adj boxes
-        elif direction == -1:
-            nextCells_backward = adj[current_backward] #find all the adj boxes
-
-        if direction == 1:
             for next in nextCells_forward:
+                visited.append(next)
                 cost, temp_point = find_cost(current_forward,next,detail_points[current_forward][0]) #find the cost and point inside
                 new_cost = cost_so_far_forward[current_forward] + cost
+
+                #If next already visited by backward search
                 if next in came_from_backward:
                     came_from_forward[next] = current_forward
-                    #detail_points[next].append(temp_point)
                     mid_point = temp_point
-                    goal_mid = next
+                    mid_box = next
                     find = True
                     break
-                #current_prev_forward = current_forward
-                #new_cost = cost_so_far[current] + graph.cost(current, next)
+
                 if next not in cost_so_far_forward or new_cost < cost_so_far_forward[next]:
                     cost_so_far_forward[next] = new_cost
                     priority = new_cost
                     frontier.put(next, priority,'dst')
                     came_from_forward[next] = current_forward
-                    #pstart = pend
                     detail_points[next].append(temp_point)
-                    visited_forward[next] = True
 
+        #Backward search
         if direction == -1:
+            nextCells_backward = adj[current_backward] #find all the adj boxes
             for next in nextCells_backward:
+                visited.append(next)
                 cost, temp_point = find_cost(current_backward,next,detail_points[current_backward][0]) #find the cost and point inside
                 new_cost = cost_so_far_backward[current_backward] + cost
+
+                #If next already visited by forward search
                 if next in came_from_forward:
                     came_from_backward[next] = current_backward
-                    #detail_points[next].append(temp_point)
                     mid_point = temp_point
-                    goal_mid = next
+                    mid_box = next
                     find = True
                     break
-                #current_prev_backward = current_backward
-                #new_cost = cost_so_far[current] + graph.cost(current, next)
+
                 if next not in cost_so_far_backward or new_cost < cost_so_far_backward[next]:
                     cost_so_far_backward[next] = new_cost
                     priority = new_cost
                     frontier.put(next, priority,'src')
                     came_from_backward[next] = current_backward
-                    #pstart = pend
                     detail_points[next].append(temp_point)
-                    visited_backward[next] = True
+
+
     if find is False:
         print "No path found"
-        return [],([],[]),0,(0,0)
+        return [],([],[]),0,(0,0),visited
+
     path = []
+    #if forward found a box already in backward search
     if direction is 1:
         print("forward")
+        #start from the box before both search meet
+        #build the first half
         current = current_forward
         path.append(current)
         while current != start:
             current = came_from_forward[current]
             path.append(current)
 
-        current = goal_mid
+        #build the other half
+        current = mid_box
         path.append(current)
         while current != goal:
             current = came_from_backward[current]
             path.append(current)
 
+    #if backward found a box already in forward search
     if direction is -1:
         print("backward")
+        #start from the box before both search meet
+        #build the first half
         current = current_backward
         path.append(current)
         while current != goal:
             current = came_from_backward[current]
             path.append(current)
 
-        current = goal_mid
+        #build the other half
+        current = mid_box
         path.append(current)
         while current != start:
             current = came_from_forward[current]
             path.append(current)
 
 
-    #current = start
-    #path = [current]
-    #while current != goal:
-    #    current = came_from_backward[current]
-    #    path.append(current)
 
-    return path,detail_points, direction, mid_point
+
+    return path,detail_points, direction, mid_point,visited
 
 
 #Helper class for search function
