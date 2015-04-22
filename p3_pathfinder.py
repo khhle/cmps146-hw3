@@ -17,7 +17,7 @@ def find_path(src_point,dst_point,mesh):
     flag = False
     box_list = mesh['boxes']
     adj_list = mesh['adj']
-
+    direction = 0
     detail_points = {}
 
 
@@ -54,17 +54,22 @@ def find_path(src_point,dst_point,mesh):
     #start at dst_point since found_path in reverse order
 
 
-    print(mid_point)
-    pstart = mid_point
-    for my_path in found_path:
-        pend = detail_points[my_path][0]
-        path.append((pstart,pend))
-        pstart = pend
-        if direction == 1 and my_path == visited_nodes[0]:
-            pstart = mid_point
-        if direction == -1 and my_path == visited_nodes[1]:
-            pstart = mid_point
-
+    if direction != 0:
+        pstart = mid_point
+        for my_path in found_path:
+            pend = detail_points[my_path][0]
+            path.append((pstart,pend))
+            pstart = pend
+            if direction == 1 and my_path == visited_nodes[0]:
+                pstart = mid_point
+            if direction == -1 and my_path == visited_nodes[1]:
+                pstart = mid_point
+    else:
+        pstart = dst_point
+        for my_path in found_path:
+            pend = detail_points[my_path][0]
+            path.append((pstart,pend))
+            pstart = pend
     #Add path to visited_nodes
     for my_path in found_path:
         visited_nodes.append(my_path)
