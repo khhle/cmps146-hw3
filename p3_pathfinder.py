@@ -53,6 +53,7 @@ def find_path(src_point,dst_point,mesh):
     #Re-construct the path using line segment
     #start at dst_point since found_path in reverse order
 
+    mid_point = (0,0)
 
     if direction != 0:
         pstart = mid_point
@@ -188,7 +189,7 @@ def dijkstra_search(start, goal,adj,src_point):
     detail_points = collections.defaultdict(list)
 
     detail_points[start].append(src_point)
-
+    visited = []
     while not frontier.empty():
         current = frontier.get()
 
@@ -200,12 +201,16 @@ def dijkstra_search(start, goal,adj,src_point):
             new_cost = cost_so_far[current] + cost
             #new_cost = cost_so_far[current] + graph.cost(current, next)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
+                visited.append(next)
                 cost_so_far[next] = new_cost
                 priority = new_cost
                 frontier.put(next, priority)
                 came_from[next] = current
                 #pstart = pend
                 detail_points[next].append(temp_point)
+    if current != goal:
+        print "no path"
+        return [],([],[])
     current = goal
     path = [current]
     while current != start:
@@ -376,6 +381,9 @@ def bidirect_search(start, goal,adj,src_point,dst_point):
                     #pstart = pend
                     detail_points[next].append(temp_point)
                     visited_backward[next] = True
+    if find is False:
+        print "No path found"
+        return [],([],[]),0,(0,0)
     path = []
     if direction is 1:
         print("forward")
